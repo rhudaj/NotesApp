@@ -1,0 +1,73 @@
+#app {
+  width: 100%;
+  height: 100%;
+
+  overflow: scroll;
+
+  padding: 2%;
+}
+
+#sections-container {
+  width: 100%;
+  height: 100%;
+  border: 2px solid black;
+  display: flex;
+  flex-direction: column;
+  gap: 2%;
+}
+
+.section {
+  display: flex;
+  height: min-content;
+}
+
+.section:hover {
+  border: 1px solid black;
+}
+
+  .section > .controls {
+    width: 5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+    .controls > .remove-section:hover {
+      transform: scale(1.5);
+      transition: .2s;
+    }
+
+  .section > .content {
+    height: 100%;
+    width: 100%;
+    padding: 3%;
+  }
+
+    .content:focus {
+      outline: 0px solid transparent; /* prevent blue outline */
+    }
+
+    .content:hover {
+
+    }
+
+/* CALLOUT */
+
+.callout {
+  background-color: lightgray;
+  border-radius: 1em;
+  height: max-content;
+}
+
+  .callout > .head {
+    border-bottom: 5px solid black;
+    min-height: 3em;
+    padding: 1em;
+    font-size:x-large;
+  }
+
+  .callout > .content {
+    min-height: 5em;
+
+    padding: 2em;
+  }
