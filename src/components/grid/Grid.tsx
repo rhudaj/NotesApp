@@ -7,7 +7,12 @@ const gridCell = (row: number, col: number) => {
 	const cellKey = `cell${row},${col}`;
 	return (
 		<div className="grid-cell" key={cellKey}>
-			{ React.cloneElement(<Editor editorKey={`${cellKey}-edit`} />, { key: cellKey }) }
+			{
+				React.cloneElement(
+					<Editor editorKey={`${cellKey}-edit`} />,
+					{ key: cellKey }
+				)
+			}
 		</div>
 	)
 };
@@ -29,8 +34,7 @@ export function Grid(props: {}) {
 		const rowNum = matrix.length;			// number of the new row
 		const newRow = Array.from({ length: numCols }, (_, colNum) => gridCell(rowNum, colNum));
 		// Add it
-		const newMatrix = [...matrix, newRow];
-		setMatrix(newMatrix);
+		setMatrix([...matrix, newRow]);
 	};
 
 	const addCol = () => {
@@ -39,8 +43,7 @@ export function Grid(props: {}) {
 		const colNum = matrix.at(-1)!.length; 	// number of the new column
 		const newCol = Array.from({ length: numRows }, (_, rowNum) => gridCell(rowNum, colNum));
 		// Add it
-		const newMatrix = matrix.map((row, i) => [...row, newCol[i]]);
-		setMatrix(newMatrix);
+		setMatrix(matrix.map((row, i) => [...row, newCol[i]]));
 	}
 
 	return (

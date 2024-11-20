@@ -1,6 +1,6 @@
 import './editor.css';
 import React, { ReactElement, useEffect, useState } from "react";
-import { Section } from "../section/section";
+import { Section, SectionProps } from "../section/section";
 
 /*
     An Editor is essentially a collection of Sections.
@@ -14,63 +14,60 @@ interface EditorProps {
 let sectionCounter = 0; // Counter outside the component to ensure uniqueness
 
 export function Editor(props: EditorProps) {
-    const [sections, setSections] = useState<ReactElement[]>([]);
 
-	const createSection = (content?: any) => {
-		const secKey = `${props.editorKey}-sec-${sectionCounter++}`;
-		// Ensures the key is properly assigned for React while allowing you to pass the same secKey to the Section component as a prop (secKey).
-		return React.cloneElement(<Section children={content} secKey={secKey} />, { key: secKey })
-	};
+	const [sections, setSections] = useState<SectionProps[]>([]);
+
+	const createSectionProps = (content?: any) => ({
+		children: content,
+		secKey: `${props.editorKey}-sec-${sectionCounter++}`,
+		onNewSection: handleNewSection,
+		onRemoveSection: handleRemoveSection
+	});
 
 	// Start with just one section:
 	useEffect(() => {
-		setSections([createSection()]);
+		console.log(`New Editor, key: ${props.editorKey}`);
+		setSections([createSectionProps()]);
 	}, []);
 
-	const onNewSection = (e: Event) => {
-		const content = (e as CustomEvent).detail.contentEl;
-		console.log('new section with content: ', content);
-		e.stopPropagation();
-		setSections([...sections, createSection(content)]);
-	};
+    const handleNewSection = (secKey: string, content?: ReactElement) => {
 
-	const onRemoveSection = (e: Event) => {
-		const ce = e as CustomEvent;
-		console.log('Deleting section ', ce.detail.secKey);
-		// Find the index of the section with key = secKey and remove it:
-		const idx = sections.findIndex(sec => sec.key === ce.detail.secKey);
-		sections.splice(idx-1, 1);
+		console.log(`handleNewSection:
+			editor-key: ${props.editorKey},
+			secKey: ${secKey},
+			content ${content ? "provided" : "not provided"}:
+		`);
+
+		// Find the index by its UNIQUE key:
+		const idx = sections.findIndex(sec => sec.secKey === secKey);
+
+			if (idx === -1) {
+				throw new Error(`Section with key ${secKey} not found`);
+			}
+
+        // Insert a new sectionProps directly after idx in the sections array:
+
+		sections.splice(idx + 1, 0, createSectionProps(content));
 		setSections([...sections]);
+    };
+
+	const handleRemoveSection = (secKey: string) => {
+		// Find the index of the section with key = secKey and remove it:
+		const idx = sections.findIndex(sec => sec.secKey === secKey);
+		sections.splice(idx-1, 1);
+		setSections([...sections]); // new array reference
 	};
-
-    useEffect(() => {
-		// Listen for new section events (triggered by the Section component):
-        document.addEventListener("newSection", onNewSection);
-		document.addEventListener("removeSection", onRemoveSection);
-
-		return () => {
-			document.removeEventListener("newSection", onNewSection);
-
-			// get the new section element:
-			const el = document.getElementById(`section-${sections.length}`)?.getElementsByClassName("content")[0] as HTMLElement;
-			console.log('el = ', el);
-			if(!el) return;
-
-			// Put the caret (text cursor) in the new section:
-			let range = document.createRange();		// Create a range (a range is a like the selection but invisible)
-			range.selectNodeContents(el);			// Select the entire contents of the element with the range
-			range.collapse(false);					//	collapse the range to the end point. false means collapse to end rather than the start
-			let selection = window.getSelection();	// get the selection object (allows you to change selection)
-			console.log('selection = ', selection);
-			selection?.removeAllRanges();			// remove any selections already made
-			selection?.addRange(range);				// make the range you have just created the visible selection
-        };
-
-    }, [sections]);
 
     return (
         <div className="sections-container" id={props.id} key={props.editorKey}>
-            { sections }
+            {
+				sections.map(secProps => (
+					React.cloneElement(
+						<Section {...secProps}/>,
+						{ key: secProps.secKey }
+					)
+				))
+			}
         </div>
     );
 };
