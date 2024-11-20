@@ -1,11 +1,16 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import { Editor } from "./editor/editor";
+
+function App() {
+    return (
+        <div id="app">
+            <Editor id="root-editor" editorKey="root-editor"/>
+        </div>
+    );
+};
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
-root.render(
-  <App />
-);
+root.render(<App />);

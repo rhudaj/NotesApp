@@ -1,4 +1,11 @@
 /* Apply css to every element */
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: scroll;
+  padding: 2%;
+}
+
 * {
   margin: 0;
   padding: 0;

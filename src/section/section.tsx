@@ -10,7 +10,15 @@ const CUSTOM_COMPONENTS: { [key: string]: (props: {}) => ReactElement } = {
 	"list": CC.BulletList
 };
 
-const getNewSectionEvent = (contentEl: any = undefined) => (
+/**
+ * @param contentEl
+ * The content element to be added to the new section.
+ * If not provided, the new section will be empty.
+*/
+const getNewSectionEvent = (
+	contentEl?: ReactElement,
+) => (
+	// TODO: the editor should be sending this event.
 	new CustomEvent("newSection", {
 		bubbles: true,
 		cancelable: true,
@@ -20,23 +28,23 @@ const getNewSectionEvent = (contentEl: any = undefined) => (
 	})
 );
 
-const getRemoveSectionEvent = (secNum: number) => (
+const getRemoveSectionEvent = (secKey: string) => (
 	new CustomEvent("removeSection", {
 		bubbles: true,
 		cancelable: true,
-		detail: { secNum: secNum }
+		detail: { secKey: secKey }
 	})
 );
 
-// -------- SECTION COMPONENT --------
+// -------- SECTION CONTROLS --------
 
 function SectionControls(props: {
-	secRef: React.RefObject<HTMLDivElement>,	// reference to the section element being controlled
-	secNum: number								// it's corresponding section number
+	secRef: React.RefObject<HTMLDivElement>,	// Reference to the section element being controlled
+	secKey: string								// Unique key of the referenced section
 }) {
 
 	const removeSection = (e: React.MouseEvent<HTMLDivElement>) => {
-		document.dispatchEvent(getRemoveSectionEvent(props.secNum));
+		document.dispatchEvent(getRemoveSectionEvent(props.secKey));
 	};
 
 	const moveSection = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -59,7 +67,7 @@ function SectionControls(props: {
 		if (!section) return;
 		// 2 - place the section in the new position
 		section.style.position = "relative";
-	}
+	};
 
 	return (
 		<div className="controls" contentEditable={false}>
@@ -71,85 +79,97 @@ function SectionControls(props: {
 	)
 };
 
-export function Section(props: {
-	secNum: number,
-	children?: ReactElement,
-	enableControls?: boolean
-}) {
+// -------- SECTION COMPONENT --------
 
-	const secRef = createRef<HTMLDivElement>();
-	const enableControls = props.enableControls ?? true;
+const onKeyDownCapture = (e: React.KeyboardEvent<HTMLDivElement>) => {
+	// TODO: this should be implemented as a DFA machine to handle the different states
 
-    const onKeyDownCapture = (e: React.KeyboardEvent<HTMLDivElement>) => {
-		// TODO: this should be implemented as a DFA machine to handle the different states
+	const TXT = e.currentTarget.textContent;
 
-        // SHIFT+ENTER ==> NEW SECTION
-		if (e.shiftKey && e.key === "Enter") {
-            e.preventDefault(); // prevents the default behavior of inserting a newline
-            console.log("shift+enter => new section");
-            // signal to the parent that a new section should be created:
-            e.target.dispatchEvent(getNewSectionEvent());
-        }
-		// ENTER (MAY) ==> EXECUTE COMMAND
-		else if (e.key === "Enter") {
+	// SHIFT+ENTER ==> NEW SECTION
+	if (e.shiftKey && e.key === "Enter") {
+		e.preventDefault(); // prevents the default behavior of inserting a newline
+		// signal to the parent that a new section should be created:
+		e.target.dispatchEvent(getNewSectionEvent());
+	}
 
-			const text = e.currentTarget.textContent;
+	// LOOK FOR TEXT BASED ON COMMANDS
 
-			if (! text)
-				return;
+	if (! TXT) {
+		return;
+	}
 
-			// ####################### HEADINGS #######################
+	// ENTER (MAY) ==> EXECUTE COMMAND
+	if (e.key === "Enter") {
 
-            if (text.endsWith("###") || text.endsWith("##") || text.endsWith("#")) {
-				const numDashes = text.endsWith("###") ? 3 : text.endsWith("##") ? 2 : 1;
-				// Set the font size based on the number of dashes
-				e.currentTarget.style.fontSize = `${2.5 - 0.3 * numDashes}em`;
-				// Prevents the default behavior of inserting a newline
-                e.preventDefault();
-				// Remove the last 3 characters
-				e.currentTarget.textContent = text.slice(0, -numDashes);
+		// ####################### HEADINGS #######################
 
-				return;
-            }
+		if (TXT.endsWith("###") || TXT.endsWith("##") || TXT.endsWith("#")) {
+			const numDashes = TXT.endsWith("###") ? 3 : TXT.endsWith("##") ? 2 : 1;
+			// Set the font size based on the number of dashes
+			e.currentTarget.style.fontSize = `${2.5 - 0.3 * numDashes}em`;
+			// Prevents the default behavior of inserting a newline
+			e.preventDefault();
+			// Remove the last 3 characters
+			e.currentTarget.textContent = TXT.slice(0, -numDashes);
 
-			// ####################### CUSTOM COMPONENTS #######################
-
-			const commandMatch = text.match(/\/\S+$/);	// match for "/<someWord>"
-			if (commandMatch) {
-				const cmd = commandMatch[0].slice(1);	// remove the leading "/"
-				const CustomComponent = CUSTOM_COMPONENTS[cmd];
-				if ( CustomComponent ) {
-					// the command is valid, so create a new section with the custom component
-					e.target.dispatchEvent(getNewSectionEvent(<CustomComponent/>));
-					e.currentTarget.textContent = text.slice(0, -commandMatch[0].length);
-					return;
-				}
-			}
-        }
-		else if (e.key === " ") {
-			console.log('space key pressed');
-			const text = e.currentTarget.textContent;
-			console.log('text = ', text);
-			if (! text) return;
-			if (text === "-") {
-				e.target.dispatchEvent(getNewSectionEvent(<CC.BulletList/>));
-				e.currentTarget.textContent = text.slice(0, -1);
-			}
 			return;
 		}
-		// ####################### NO COMMAND #######################
-    };
+
+		// ####################### CUSTOM COMPONENTS #######################
+
+		const commandMatch = TXT.match(/\/\S+$/);	// match for "/<someWord>"
+		if (commandMatch) {
+			const cmd = commandMatch[0].slice(1);	// remove the leading "/"
+			const CustomComponent = CUSTOM_COMPONENTS[cmd];
+			if ( CustomComponent ) {
+				// the command is valid, so create a new section with the custom component
+				e.target.dispatchEvent(getNewSectionEvent(<CustomComponent/>));
+				e.currentTarget.textContent = TXT.slice(0, -commandMatch[0].length);
+				return;
+			}
+		}
+	}
+	// ####################### BULLET LIST #######################
+	else if (e.key === " ") {
+		if (TXT === "-") {
+			e.target.dispatchEvent(getNewSectionEvent(<CC.BulletList/>));
+			e.currentTarget.textContent = TXT.slice(0, -1);
+		}
+		return;
+	}
+	// ####################### NO COMMAND #######################
+};
+
+interface SectionProps {
+	children?: ReactElement,
+	enableControls?: boolean,
+	secKey: string
+};
+
+/*
+	In order to set the key (used internally by react) of a component
+	we need to wrap it in a factory function that accepts the key as a prop
+*/
+
+export function Section(props: SectionProps) {
+
+	// Section controls are ENABLED by DEFAULT
+	const enableControls = props.enableControls ?? true;
+
+	// For the parent to be able to reference this section
+	const secRef = createRef<HTMLDivElement>();
 
     return (
-        <div ref={secRef} className="section" id = {`section-${props.secNum}`}>
-			{ enableControls ? <SectionControls secRef={secRef} secNum={props.secNum}/> : null }
-			<div
-				className="content"
+        <div ref={secRef} className="section">
+
+			{ enableControls ? <SectionControls secRef={secRef} secKey={props.secKey}/> : null }
+
+			<div className="content"
 				contentEditable={true}
 				onKeyDownCapture={onKeyDownCapture}
-			>
-				{ props.children }
-			</div>
+				children={props.children}
+			/>
 		</div>
     );
 };

@@ -1,45 +1,43 @@
 import './Grid.css';
-import { useState, ReactElement, useEffect } from 'react';
+import React, { useState, ReactElement, useEffect } from 'react';
 import { Editor } from '../../editor/editor';
 
-/*
-	A matrix of Editor's
-*/
+// Defines what a cell contains (a Section component)
+const gridCell = (row: number, col: number) => {
+	const cellKey = `cell${row},${col}`;
+	return (
+		<div className="grid-cell" key={cellKey}>
+			{ React.cloneElement(<Editor editorKey={`${cellKey}-edit`} />, { key: cellKey }) }
+		</div>
+	)
+};
+
+//	A matrix of Editor's
 export function Grid(props: {}) {
 
-	// Store a matrix of components that can grow as state:
 	const [matrix, setMatrix] = useState<ReactElement[][]>([]);
 
-	// Defines what a cell contains (a Section component)
-	const getNewCell = () => {
-		const matrixSize = matrix.map(row => row.length).reduce((a, b) => Math.max(a, b), 0);
-		return <Editor />
-	}
-
-	// Start with just one row and one column:
+	// Start with 1 cell
 	useEffect(() => {
-		setMatrix([[getNewCell()]]);
+		setMatrix( [ [gridCell(0,0)] ] );
 	}, []);
 
+	// Add a new row to the matrix
 	const addRow = () => {
-		// Add a new row to the matrix:
-		const numCols = matrix[0].length;
-
-		// Create a new row with the same number of columns:
-		const newRow = Array(numCols).fill(getNewCell());
-
+		// Use the # of columns in the last row as # of columns in the new row
+		const numCols = matrix.at(-1)!.length;
+		const rowNum = matrix.length;			// number of the new row
+		const newRow = Array.from({ length: numCols }, (_, colNum) => gridCell(rowNum, colNum));
 		// Add it
 		const newMatrix = [...matrix, newRow];
 		setMatrix(newMatrix);
 	};
 
 	const addCol = () => {
-		// Add a new column to the matrix:
+		// Create a new column w' the same # rows:
 		const numRows = matrix.length;
-
-		// Create a new column with the same number of rows:
-		const newCol = Array(numRows).fill(getNewCell());
-
+		const colNum = matrix.at(-1)!.length; 	// number of the new column
+		const newCol = Array.from({ length: numRows }, (_, rowNum) => gridCell(rowNum, colNum));
 		// Add it
 		const newMatrix = matrix.map((row, i) => [...row, newCol[i]]);
 		setMatrix(newMatrix);
@@ -48,15 +46,13 @@ export function Grid(props: {}) {
 	return (
 		<div className="custom-grid">
 			<div className="grid-content">
-				{matrix.map((row, i) => (
-					<div className="grid-row" key={i}>
-						{row.map((cell, j) => (
-							<div className="grid-cell" key={j}>
-								{cell}
-							</div>
-						))}
-					</div>
-				))}
+				{
+					matrix.map((row, i) => (
+						<div className="grid-row" key={`row-${i}`}>
+							{ row.map((_, j) => gridCell(i, j)) }
+						</div>
+					))
+				}
 			</div>
 			<div contentEditable={false} className="grid-controls add-col" onClick={addCol}>+</div>
 			<div contentEditable={false} className="grid-controls add-row" onClick={addRow}>+</div>
