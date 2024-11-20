@@ -1,0 +1,40 @@
+.section {
+	display: flex;
+	height: min-content;
+}
+
+    .section > .controls {
+		width: 5%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+
+		/* HIDE THE CONTENTS UNTIL HOVERED */
+		opacity: 0;
+    }
+
+	.controls:hover {
+		opacity: 100%;
+		transition: .5s;
+	}
+
+
+		.expand-control:hover {
+			transform: scale(1.5);
+			transition: .2s;
+		}
+
+    .section > .content {
+		height: 100%;
+		width: 100%;
+		padding: 3%;
+
+		/* STYLE THAT MATCHES EDITOR */
+		border: 1px solid gray;
+		border-radius: 8px;
+    }
+
+		.content:focus {
+			outline: 0px solid transparent; /* prevent blue outline */
+		}

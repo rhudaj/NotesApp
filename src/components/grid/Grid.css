@@ -1,0 +1,48 @@
+.custom-grid {
+    border: 2px solid red;
+
+    display: grid;
+    grid-template-areas:
+        "add-col grid-content"
+        ".       add-row";
+
+    grid-template-columns: min-content auto;
+}
+
+    .grid-content {
+        grid-area: grid-content;
+
+        display: flex;
+        flex-direction: column;
+
+        overflow-x: scroll;
+    }
+
+        .grid-row {
+            width: 100%;
+            display: flex;
+        }
+
+            .grid-cell {
+                width: 100%;
+                padding: 20px;
+                border: 1px solid grey;
+            }
+
+    .grid-controls {
+        display: flex;
+        justify-content: center;
+        background-color: lightgrey;
+        /* THE USER IS NOT ABLE TO SELECT TEXT */
+
+        /* ALIGN THE TEXT IN THE CENTER VERTICALLY */
+        align-items: center;
+        padding: 10px;
+    }
+        .add-col {
+            grid-area: add-col;
+        }
+
+        .add-row {
+            grid-area: add-row;
+        }

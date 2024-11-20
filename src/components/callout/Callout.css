@@ -1,0 +1,20 @@
+/* CALLOUT */
+
+.callout {
+    background-color: lightgray;
+    border-radius: 1em;
+    height: max-content;
+  }
+
+    .callout > .head {
+      border-bottom: 5px solid black;
+      min-height: 3em;
+      padding: 1em;
+      font-size:x-large;
+    }
+
+    .callout > .content {
+      min-height: 5em;
+
+      padding: 2em;
+    }
