@@ -58,7 +58,7 @@ function SectionControls(props: {
 
 export interface SectionProps {
 	secKey: string,
-	onNewSection: (secKey: string, content?: ReactElement) => void,
+	onNewSection: (secKey: string, replace: boolean, content?: ReactElement) => void,
 	onRemoveSection: (secKey: string) => void,
 	children?: ReactElement,
 	enableControls?: boolean,
@@ -72,16 +72,37 @@ export function Section(props: SectionProps) {
 	// For the parent to be able to reference this section
 	const secRef = createRef<HTMLDivElement>();
 
+	const [selectedText, setSelectedText] = useState<string | null>(null);
+
+	const handleSelectionChange = () => {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (secRef.current && secRef.current.contains(range.commonAncestorContainer)) {
+                setSelectedText(selection.toString());
+				console.log(`=> Selected Text: ${selectedText}`);
+            } else {
+                setSelectedText(null);
+            }
+        }
+    };
+
 	const onKeyDownCapture = (e: React.KeyboardEvent<HTMLDivElement>) => {
 		// TODO: this should be implemented as a DFA machine to handle the different states
 
 		const TXT = e.currentTarget.textContent;
 
+		// CMD + H while text is selected => create a hidden block
+        if (e.metaKey && e.key === 'h' && selectedText) {
+            e.preventDefault();
+            console.log(`Selected Text ${selectedText} and CMD + H`);
+        }
+
 		// SHIFT+ENTER ==> NEW SECTION
 		if (e.shiftKey && e.key === "Enter") {
 			e.preventDefault(); // prevents the default behavior of inserting a newline
 			// signal to the parent that a new section should be created:
-			props.onNewSection(props.secKey, undefined);
+			props.onNewSection(props.secKey, false);
 		}
 
 		// LOOK FOR TEXT BASED ON COMMANDS
@@ -115,8 +136,11 @@ export function Section(props: SectionProps) {
 				const CustomComponent = CUSTOM_COMPONENTS[cmd];
 				if ( CustomComponent ) {
 					// the command is valid, so create a new section with the custom component
-					props.onNewSection(props.secKey, <CustomComponent/>);
-					e.currentTarget.textContent = TXT.slice(0, -commandMatch[0].length);
+					const newTxt = TXT.slice(0, -commandMatch[0].length).trim();
+					// Determine wether to create a new section or replace the existing one
+					const doReplace = newTxt === "";
+					props.onNewSection(props.secKey, doReplace, <CustomComponent/>);
+					e.currentTarget.textContent = newTxt;
 					return;
 				}
 			}
@@ -124,8 +148,12 @@ export function Section(props: SectionProps) {
 		// ####################### BULLET LIST #######################
 		else if (e.key === " ") {
 			if (TXT === "-") {
-				props.onNewSection(props.secKey, <CC.BulletList/>);
-				e.currentTarget.textContent = TXT.slice(0, -1);
+				const newTxt = TXT.slice(0, -1).trim();
+				if (newTxt === "") {
+					// Replace the current section with a bullet list
+					props.onNewSection(props.secKey, true, <CC.BulletList/>);
+					e.currentTarget.textContent = TXT.slice(0, -1);
+				}
 			}
 			return;
 		}
@@ -134,12 +162,12 @@ export function Section(props: SectionProps) {
 
     return (
         <div ref={secRef} className="section">
-
 			{ enableControls ? <SectionControls onRemoveSection={props.onRemoveSection} secRef={secRef} secKey={props.secKey}/> : null }
-
 			<div className="content"
 				contentEditable={true}
 				onKeyDownCapture={onKeyDownCapture}
+				onMouseUp={handleSelectionChange}
+                onDoubleClick={handleSelectionChange}
 				children={props.children}
 			/>
 		</div>

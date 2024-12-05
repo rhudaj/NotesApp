@@ -2,10 +2,6 @@ import './editor.css';
 import React, { ReactElement, useEffect, useState } from "react";
 import { Section, SectionProps } from "../section/section";
 
-/*
-    An Editor is essentially a collection of Sections.
-*/
-
 interface EditorProps {
 	id?: string,
 	editorKey?: string
@@ -13,6 +9,7 @@ interface EditorProps {
 
 let sectionCounter = 0; // Counter outside the component to ensure uniqueness
 
+// An Editor is essentially a collection of Sections.
 export function Editor(props: EditorProps) {
 
 	const [sections, setSections] = useState<SectionProps[]>([]);
@@ -30,7 +27,7 @@ export function Editor(props: EditorProps) {
 		setSections([createSectionProps()]);
 	}, []);
 
-    const handleNewSection = (secKey: string, content?: ReactElement) => {
+    const handleNewSection = (secKey: string, replace: boolean, content?: ReactElement) => {
 
 		console.log(`handleNewSection:
 			editor-key: ${props.editorKey},
@@ -45,10 +42,15 @@ export function Editor(props: EditorProps) {
 				throw new Error(`Section with key ${secKey} not found`);
 			}
 
-        // Insert a new sectionProps directly after idx in the sections array:
-
-		sections.splice(idx + 1, 0, createSectionProps(content));
-		setSections([...sections]);
+		if (replace) {
+			// Replace the section at idx with a new sectionProps:
+			sections.splice(idx, 1, createSectionProps(content));
+			setSections([...sections]); // new array reference
+		} else {
+			// Insert a new sectionProps directly after idx in the sections array:
+			sections.splice(idx + 1, 0, createSectionProps(content));
+			setSections([...sections]); // new array reference
+		}
     };
 
 	const handleRemoveSection = (secKey: string) => {

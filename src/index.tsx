@@ -1,12 +1,20 @@
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import { Editor } from "./editor/editor";
+import { FreeDragContainer } from './FreeDragContainer/FreeDragContainer';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { Children } from 'react';
+import { Editor } from './editor/editor';
 
 function App() {
+
     return (
-        <div id="app">
-            <Editor id="root-editor" editorKey="root-editor"/>
-        </div>
+        <DndProvider backend={HTML5Backend}>
+            <FreeDragContainer >
+                <Editor id="editor-1" editorKey="editor-1"/>
+                <Editor id="editor-2" editorKey="editor-2"/>
+            </FreeDragContainer>
+        </DndProvider>
     );
 };
 
