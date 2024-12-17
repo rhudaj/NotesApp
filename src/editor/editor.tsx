@@ -1,74 +1,98 @@
 import './editor.css';
-import React, { ReactElement, useEffect, useState } from "react";
-import { Section, SectionProps } from "../section/section";
+import { useEffect } from "react";
+import { Section } from "../section/section";
+import { useImmer } from "use-immer";
+import { CUSTOM_COMPONENTS } from '../components';
 
-interface EditorProps {
-	id?: string,
-	editorKey?: string
+
+interface SectionType {
+	key: string,
+	cname?: string
 };
 
 let sectionCounter = 0; // Counter outside the component to ensure uniqueness
 
 // An Editor is essentially a collection of Sections.
-export function Editor(props: EditorProps) {
+export function Editor(props: {
+	id?: string,
+	editorKey?: string
+}) {
 
-	const [sections, setSections] = useState<SectionProps[]>([]);
-
-	const createSectionProps = (content?: any) => ({
-		children: content,
-		secKey: `${props.editorKey}-sec-${sectionCounter++}`,
-		onNewSection: handleNewSection,
-		onRemoveSection: handleRemoveSection
-	});
+	const [sections, setSections] = useImmer<SectionType[]>([]);
 
 	// Start with just one section:
 	useEffect(() => {
 		console.log(`New Editor, key: ${props.editorKey}`);
-		setSections([createSectionProps()]);
+		setSections([ createSection() ]);
 	}, []);
 
-    const handleNewSection = (secKey: string, replace: boolean, content?: ReactElement) => {
+	useEffect(() => {
+		console.log(`Editor ${props.editorKey} NEW SECTIONS:`, sections);
+	}, [sections]);
+
+	const createSection = (cname?: string) => ({
+		key: `${props.editorKey}-sec-${sectionCounter++}`,
+		cname: cname
+	});
+
+    const handleNewSection = (secKey: string, replace: boolean, cname?: string) => {
 
 		console.log(`handleNewSection:
 			editor-key: ${props.editorKey},
 			secKey: ${secKey},
-			content ${content ? "provided" : "not provided"}:
-		`);
+			component-name ${cname ? "provided" : "not provided"}`);
 
 		// Find the index by its UNIQUE key:
-		const idx = sections.findIndex(sec => sec.secKey === secKey);
+		const idx = sections.findIndex(sec => sec.key === secKey);
 
-			if (idx === -1) {
-				throw new Error(`Section with key ${secKey} not found`);
-			}
+		if (idx === -1) {
+			throw new Error(`Section with key ${secKey} not found in editor ${props.editorKey}`);
+		}
 
 		if (replace) {
 			// Replace the section at idx with a new sectionProps:
-			sections.splice(idx, 1, createSectionProps(content));
-			setSections([...sections]); // new array reference
+			setSections(draft => {
+				draft.splice(idx, 1, createSection(cname) );
+			});
 		} else {
 			// Insert a new sectionProps directly after idx in the sections array:
-			sections.splice(idx + 1, 0, createSectionProps(content));
-			setSections([...sections]); // new array reference
+			setSections(draft => {
+				draft.splice(idx + 1, 0, createSection(cname));
+			});
 		}
     };
 
 	const handleRemoveSection = (secKey: string) => {
 		// Find the index of the section with key = secKey and remove it:
-		const idx = sections.findIndex(sec => sec.secKey === secKey);
-		sections.splice(idx-1, 1);
-		setSections([...sections]); // new array reference
+		const idx = sections.findIndex(sec => sec.key === secKey);
+		if (idx === -1) {
+			throw new Error(`Section with key ${secKey} not found`);
+		}
+		setSections(draft => {
+			draft.splice(idx, 1);
+		});
 	};
 
     return (
-        <div className="sections-container" id={props.id} key={props.editorKey}>
+        <div
+			key={props.editorKey}
+			className="sections-container"
+			id={props.id}
+		>
             {
-				sections.map(secProps => (
-					React.cloneElement(
-						<Section {...secProps}/>,
-						{ key: secProps.secKey }
+				sections.map((sec: SectionType) => {
+					const CustomComponent = sec.cname ? CUSTOM_COMPONENTS[sec.cname] : () => null
+					return (
+						<Section
+							secKey={sec.key}
+							enableControls={true}
+							onNewSection={handleNewSection}
+							onRemoveSection={handleRemoveSection}
+						>
+							<CustomComponent/>
+						</Section>
 					)
-				))
+				})
 			}
         </div>
     );
